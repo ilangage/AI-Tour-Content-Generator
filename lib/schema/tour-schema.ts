@@ -39,6 +39,14 @@ export const blogTipSchema = z
   })
   .strict()
 
+/** Canonical blog tips object used in final Tour output. */
+export const blogTipsObjectSchema = z
+  .object({
+    title: z.string(),
+    content: z.string(),
+  })
+  .strict()
+
 /** Single "thing to do" item. */
 export const thingToDoSchema = z
   .object({
@@ -69,7 +77,7 @@ export const tourSchema = z
     itinerary: z.array(itineraryDaySchema),
     mapStops: z.array(mapStopSchema).optional(),
     thingsToDo: z.array(thingToDoSchema).optional(),
-    blogTips: z.union([z.string(), z.array(blogTipSchema)]).optional(),
+    blogTips: z.union([z.string(), z.array(blogTipSchema), blogTipsObjectSchema]).optional(),
     faqs: z.array(faqItemSchema),
     metaTitle: z.string().optional(),
     metaDescription: z.string().optional(),
@@ -80,5 +88,6 @@ export type ItineraryDay = z.infer<typeof itineraryDaySchema>
 export type MapStop = z.infer<typeof mapStopSchema>
 export type FaqItem = z.infer<typeof faqItemSchema>
 export type BlogTip = z.infer<typeof blogTipSchema>
+export type BlogTipsObject = z.infer<typeof blogTipsObjectSchema>
 export type ThingToDo = z.infer<typeof thingToDoSchema>
 export type Tour = z.infer<typeof tourSchema>

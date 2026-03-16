@@ -12,8 +12,13 @@ import type { Tour } from '@/lib/schema/tour-schema'
 import type { SavedTourDraft } from '@/lib/types/draft'
 import type { RegeneratableTourSection } from '@/lib/types/section'
 import type { SectionValue } from './section-editor'
+import type { KeywordIntelligence } from '@/lib/types/keyword'
 import { mergeRegeneratedSection } from '@/lib/tour/merge-regenerated-section'
 import { RegenerateSectionDialog } from './regenerate-section-dialog'
+import { KeywordIntelligencePanel } from './keyword-intelligence-panel'
+import { buildKeywordIntelligence } from '@/lib/csv/build-keyword-intelligence'
+import { MetaSeoControls, type MetaTone } from './meta-seo-controls'
+import { TourTypePresets, type TourTypePreset } from './tour-type-presets'
 import {
   canExportTour,
   downloadTourJson,
@@ -39,6 +44,12 @@ const INITIAL_STATE: GenerationUiState = {
 export function TourGeneratorWorkspace() {
   const [csvFile, setCsvFile] = useState<File | null>(null)
   const [itineraryText, setItineraryText] = useState('')
+  const [keywordIntel, setKeywordIntel] = useState<KeywordIntelligence | null>(null)
+  const [primaryKeywordOverride, setPrimaryKeywordOverride] = useState('')
+  const [metaTitleLength, setMetaTitleLength] = useState(60)
+  const [metaDescriptionLength, setMetaDescriptionLength] = useState(155)
+  const [metaTone, setMetaTone] = useState<MetaTone>('balanced')
+  const [tourType, setTourType] = useState<TourTypePreset>('day')
   const [state, setState] = useState<GenerationUiState>(INITIAL_STATE)
   const [currentDraftId, setCurrentDraftId] = useState<string | null>(null)
   const [copySuccess, setCopySuccess] = useState(false)
@@ -73,6 +84,25 @@ export function TourGeneratorWorkspace() {
     return () => clearTimeout(t)
   }, [copyError, downloadError])
 
+  // Recompute keyword intelligence when a new CSV file is selected.
+  useEffect(() => {
+    if (!csvFile) {
+      setKeywordIntel(null)
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const text = String(e.target?.result ?? '')
+      try {
+        const intel = buildKeywordIntelligence(text)
+        setKeywordIntel(intel)
+      } catch {
+        setKeywordIntel(null)
+      }
+    }
+    reader.readAsText(csvFile)
+  }, [csvFile])
+
   const runGeneration = useCallback(async () => {
     if (!csvFile) {
       setState((s) => ({ ...s, error: 'Please upload a keyword research CSV file.', validationErrors: null }))
@@ -99,6 +129,13 @@ export function TourGeneratorWorkspace() {
       const formData = new FormData()
       formData.append(FORM_FIELD_CSV, csvFile)
       formData.append(FORM_FIELD_ITINERARY, trimmed)
+      if (primaryKeywordOverride.trim()) {
+        formData.append('primaryOverride', primaryKeywordOverride.trim())
+      }
+      formData.append('metaTitleLength', String(metaTitleLength))
+      formData.append('metaDescriptionLength', String(metaDescriptionLength))
+      formData.append('metaTone', metaTone)
+      formData.append('tourType', tourType)
 
       const res = await fetch(API_ENDPOINT, { method: 'POST', body: formData })
       const data = await res.json()
@@ -146,11 +183,25 @@ export function TourGeneratorWorkspace() {
         validationErrors: null,
       }))
     }
-  }, [csvFile, itineraryText])
+  }, [
+    csvFile,
+    itineraryText,
+    primaryKeywordOverride,
+    metaTitleLength,
+    metaDescriptionLength,
+    metaTone,
+    tourType,
+  ])
 
   const reset = useCallback(() => {
     setCsvFile(null)
     setItineraryText('')
+    setKeywordIntel(null)
+    setPrimaryKeywordOverride('')
+    setMetaTitleLength(60)
+    setMetaDescriptionLength(155)
+    setMetaTone('balanced')
+    setTourType('day')
     setState(INITIAL_STATE)
     setCurrentDraftId(null)
     formRef.current?.reset()
@@ -389,6 +440,20 @@ export function TourGeneratorWorkspace() {
                 }}
                 disabled={state.isLoading}
               />
+              <KeywordIntelligencePanel
+                intel={keywordIntel}
+                primaryOverride={primaryKeywordOverride}
+                onPrimaryOverrideChange={setPrimaryKeywordOverride}
+              />
+              <MetaSeoControls
+                metaTitleLength={metaTitleLength}
+                metaDescriptionLength={metaDescriptionLength}
+                metaTone={metaTone}
+                onMetaTitleLengthChange={setMetaTitleLength}
+                onMetaDescriptionLengthChange={setMetaDescriptionLength}
+                onMetaToneChange={setMetaTone}
+              />
+              <TourTypePresets tourType={tourType} onTourTypeChange={setTourType} />
             </form>
             <ItineraryInputCard
               value={itineraryText}
@@ -428,6 +493,7 @@ export function TourGeneratorWorkspace() {
               onRegenerateSection={handleStartRegenerate}
               onSaveSection={handleSaveSection}
               onCancelEdit={handleCancelEdit}
+              primaryKeyword={keywordIntel?.primaryKeyword ?? null}
             />
           </div>
         </div>

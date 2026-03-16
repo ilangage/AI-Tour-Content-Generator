@@ -112,7 +112,69 @@ export const SEO_RULES_PACK = `## SEO Rules
 - Blog tips: 120–200 words
 - Use clear heading hierarchy: H1 for title, H2 for sections, H3 for itinerary days
 - Ensure content is readable, natural, and traveler-focused
-- Do not fabricate facts, hotels, prices, or locations`
+- Do not fabricate facts, hotels, prices, or locations
+
+## CSV Keyword Rules for thingsToDo and blogTips
+- Before writing thingsToDo and blogTips, always use the filtered best keywords from the keyword intelligence layer derived from the uploaded CSV.
+- Choose keywords based on: destination relevance, itinerary stop relevance, attraction relevance, activity relevance, travel-planning search intent, and SEO usefulness.
+- Prioritize keywords connected to destination names, main attractions, travel experiences, activity types, seasonal or planning intent, and relevant cultural / wildlife / nature / adventure terms.
+- Use those keywords naturally in titles and descriptions; do not keyword-stuff or repeat exact-match phrases unnaturally.
+- If CSV keyword quality is weak, still generate best-effort destination-aware content using the strongest available filtered keywords plus itinerary context.
+
+## Mandatory Field Rules for thingsToDo and blogTips
+- The final JSON is INVALID unless BOTH of these fields are present and correctly structured:
+  1. "thingsToDo"
+  2. "blogTips"
+- Never return:
+  - "thingsToDo": []
+  - "thingsToDo": ""
+  - "blogTips": ""
+  - "blogTips": []
+  - "blogTips" as a plain string
+  - placeholder text
+  - generic filler text
+
+### thingsToDo rules
+- "thingsToDo" is REQUIRED and must always be an array with EXACTLY 5 or 6 objects.
+- Each object must use this exact structure:
+  { "title": "string", "description": "string", "icon": "Mountain" | "Bird" | "Camera" | "Leaf" | "Church" | "Star" | "MapPin" | "Sun" | "Home" }
+- Allowed icon values ONLY: Mountain, Bird, Camera, Leaf, Church, Star, MapPin, Sun, Home.
+- Every item must be based on the real destination, real itinerary, real highlights, or real included experiences.
+- Every item must represent a meaningful travel activity, attraction, stop, viewpoint, wildlife experience, cultural experience, local experience, or scenic moment.
+- Titles must be short, attractive, and user-facing.
+- Descriptions must be concise, useful, and 1–2 sentences max.
+- Use the strongest filtered CSV keywords naturally where appropriate.
+- Avoid duplicates or overlapping cards.
+- Avoid vague filler like "Enjoy Nature", "Have Fun", "Explore the Area", or "Relax" unless tied to a specific actual tour experience.
+- Strong source themes include: rock fortresses, temples, train journeys, safaris, beaches, tea plantations, forts, hiking spots, waterfalls, cultural shows, historic sites, scenic drives, photography points, national parks.
+- Selection logic:
+  1) Read the itinerary; 2) Read highlights; 3) Read included experiences;
+  4) Identify the most important 5–6 real experiences;
+  5) Rank them by destination relevance + keyword relevance;
+  6) Write the final 5–6 thingsToDo cards.
+
+### blogTips rules
+- "blogTips" is REQUIRED and must always be an object, never a string.
+- It must always use this exact structure:
+  { "title": "string", "content": "string" }
+- "title" must be short, SEO-aware, and destination-specific.
+- "content" must be markdown-friendly, useful to a real traveler, itinerary-aware, and destination-aware.
+- "content" must naturally use the filtered best CSV keywords and must not be generic enough to fit any country or any tour.
+- "content" must include practical travel guidance relevant to the actual route, such as any combination of:
+  best time to visit, weather notes, what to pack, temple dress code, safari timing tips, beach advice, photography suggestions, transport/transfer advice, train journey guidance, cultural etiquette, pacing suggestions, or local timing advice.
+- "content" must be at least 2 short paragraphs OR a clean markdown-style block.
+- Keep it readable, editorial, SEO-natural, and destination-specific.
+- Do not over-format, do not return placeholder text, and do not return an empty string.
+
+### Destination + Itinerary Alignment and Self-Correction
+- Both "thingsToDo" and "blogTips" must be grounded in: destination, itinerary stops, highlights, included experiences, route logic, and filtered CSV keyword intent.
+- Do not generate unrelated activity cards or country-generic travel advice.
+- Before returning the final JSON, perform a silent internal self-check:
+  - "thingsToDo" exists, is an array, and has exactly 5 or 6 objects.
+  - Every "thingsToDo" item has "title", "description", and a valid "icon" from the allowed list.
+  - "blogTips" exists, is an object, and has both "title" and "content".
+  - Both sections are destination-specific, itinerary-aware, and naturally reflect the strongest filtered CSV keywords.
+- If any check would fail, silently regenerate or fix ONLY those sections before returning the final JSON.`
 
 /** Template compliance and locked schema. */
 export const TEMPLATE_LOCK_RULES = `## Template Compliance Rules
@@ -132,8 +194,8 @@ Highlights: highlights (string[])
 Included: included (string[]) optional
 Itinerary: array of { day (number), title (string), activities (string[]) }
 Map Stops (optional): array of { lat (number), lng (number), label (string) }
-Things to Do (optional): array of { title (string), description (string), icon (string) }
-Blog Tips (optional): string or array of { title (string), content (string) }
+Things to Do (REQUIRED): array of EXACTLY 5 or 6 items, each { title (string), description (string), icon ("Mountain" | "Bird" | "Camera" | "Leaf" | "Church" | "Star" | "MapPin" | "Sun" | "Home") }
+Blog Tips (REQUIRED): object { title (string), content (string) }
 FAQs: array of { question (string), answer (string) }`
 
 /** Final output contract: strict JSON-only requirements. */

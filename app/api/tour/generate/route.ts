@@ -4,8 +4,11 @@
  */
 
 import { NextResponse } from 'next/server'
-import { buildKeywordIntelligence } from '@/lib/csv/build-keyword-intelligence'
-import { buildTourPrompt } from '@/lib/ai/build-tour-prompt'
+import {
+  buildKeywordIntelligence,
+  overrideKeywordIntelligencePrimary,
+} from '@/lib/csv/build-keyword-intelligence'
+import { buildTourPrompt, type TourTypePreset } from '@/lib/ai/build-tour-prompt'
 import { generateTourJson } from '@/lib/ai/generate-tour-json'
 import { hasOpenAiKey } from '@/lib/ai/openai'
 import { validateAndRepairTourOutput } from '@/lib/validation/validate-and-repair-tour'
@@ -25,6 +28,11 @@ export async function POST(req: Request) {
     const formData = await req.formData()
     const csvFile = formData.get(FORM_FIELD_CSV)
     const itineraryRaw = formData.get(FORM_FIELD_ITINERARY)
+    const primaryOverrideRaw = formData.get('primaryOverride')
+    const metaTitleLengthRaw = formData.get('metaTitleLength')
+    const metaDescriptionLengthRaw = formData.get('metaDescriptionLength')
+    const metaToneRaw = formData.get('metaTone')
+    const tourTypeRaw = formData.get('tourType')
 
     if (!csvFile || !(csvFile instanceof File)) {
       return NextResponse.json(
@@ -48,7 +56,12 @@ export async function POST(req: Request) {
     }
 
     const csvText = await csvFile.text()
-    const keywordIntelligence = buildKeywordIntelligence(csvText)
+    const keywordIntelligenceBase = buildKeywordIntelligence(csvText)
+    const primaryOverride =
+      typeof primaryOverrideRaw === 'string' ? primaryOverrideRaw.trim() : ''
+    const keywordIntelligence = primaryOverride
+      ? overrideKeywordIntelligencePrimary(keywordIntelligenceBase, primaryOverride)
+      : keywordIntelligenceBase
     if (!keywordIntelligence.primaryKeyword && keywordIntelligence.secondaryKeywords.length === 0) {
       return NextResponse.json(
         { error: 'CSV could not be parsed or contains no valid keyword rows.' },
@@ -56,9 +69,30 @@ export async function POST(req: Request) {
       )
     }
 
+    const metaTitleLength =
+      typeof metaTitleLengthRaw === 'string' ? Number(metaTitleLengthRaw) || undefined : undefined
+    const metaDescriptionLength =
+      typeof metaDescriptionLengthRaw === 'string'
+        ? Number(metaDescriptionLengthRaw) || undefined
+        : undefined
+    const metaTone =
+      typeof metaToneRaw === 'string' && metaToneRaw
+        ? (metaToneRaw as 'balanced' | 'aggressive' | 'soft' | 'luxury')
+        : undefined
+    const tourType: TourTypePreset | undefined =
+      typeof tourTypeRaw === 'string' && tourTypeRaw
+        ? (tourTypeRaw as TourTypePreset)
+        : undefined
+
     const promptPackage = buildTourPrompt({
       keywordIntelligence,
       itineraryText: itineraryTrimmed,
+      tourType,
+      metaSeoOptions: {
+        metaTitleLength,
+        metaDescriptionLength,
+        tone: metaTone,
+      },
     })
 
     const rawContent = await generateTourJson(promptPackage)

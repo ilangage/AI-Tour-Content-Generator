@@ -6,6 +6,7 @@ import type { SectionValue } from './section-editor'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { EditableSectionCard } from './editable-section-card'
 import { cn } from '@/lib/utils'
+import { SeoChecklist } from './seo-checklist'
 
 export function getSectionValue(tour: Tour, section: RegeneratableTourSection): SectionValue {
   switch (section) {
@@ -35,6 +36,7 @@ export function getSectionValue(tour: Tour, section: RegeneratableTourSection): 
 
 interface PreviewTabProps {
   tour: Tour
+  primaryKeyword?: string
   editingSection: RegeneratableTourSection | null
   regeneratingSection: RegeneratableTourSection | null
   onEditSection: (section: RegeneratableTourSection) => void
@@ -46,6 +48,7 @@ interface PreviewTabProps {
 
 export function PreviewTab({
   tour,
+  primaryKeyword,
   editingSection,
   regeneratingSection,
   onEditSection,
@@ -57,6 +60,7 @@ export function PreviewTab({
   return (
     <ScrollArea className="h-[420px] w-full rounded-md">
       <div className="space-y-6 pr-4">
+        <SeoChecklist tour={tour} primaryKeyword={primaryKeyword} />
         <EditableSectionCard
           section="title"
           label="Title & destination"

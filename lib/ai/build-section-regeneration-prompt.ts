@@ -21,7 +21,7 @@ const SECTION_OUTPUT_FORMAT: Record<RegeneratableTourSection, string> = {
   highlights: 'Return only a JSON array of strings. Example: ["Highlight one", "Highlight two"]. Use 4–6 items.',
   included: 'Return only a JSON array of strings. Example: ["Accommodation", "Meals"].',
   itinerary: 'Return only a JSON array of objects, each with day (number), title (string), activities (array of strings). Example: [{"day":1,"title":"Arrival","activities":["Check-in","Briefing"]}]',
-  blogTips: 'Return either a single JSON string or a JSON array of { "title": string, "content": string }. 120–200 words total if string.',
+  blogTips: 'Return only a single JSON object with shape { "title": string, "content": string }. Content should be 120–200 words total, markdown-friendly, and destination-specific.',
   faqs: 'Return only a JSON array of { "question": string, "answer": string }. Use 4–6 items. Answers 40–80 words each.',
   metaTitle: 'Return only a single JSON string: the meta title, 50–60 characters.',
   metaDescription: 'Return only a single JSON string: the meta description, 150–160 characters.',

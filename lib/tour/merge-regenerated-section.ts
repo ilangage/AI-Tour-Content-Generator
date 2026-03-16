@@ -8,6 +8,11 @@ import { tourSchema } from '@/lib/schema/tour-schema'
 import type { RegeneratableTourSection } from '@/lib/types/section'
 import type { ItineraryDay, FaqItem, BlogTip } from '@/lib/schema/tour-schema'
 
+interface BlogTipsObject {
+  title: string
+  content: string
+}
+
 export type MergeResult = { ok: true; tour: Tour } | { ok: false; error: string; details?: unknown }
 
 function normalizeHighlights(value: unknown): string[] {
@@ -55,20 +60,38 @@ function normalizeFaqs(value: unknown): FaqItem[] {
   }))
 }
 
-function normalizeBlogTips(value: unknown): string | BlogTip[] | undefined {
+function normalizeBlogTips(value: unknown): BlogTipsObject | undefined {
   if (value === undefined || value === null) return undefined
-  if (typeof value === 'string') return value
+
+  // If the model returned a plain string, treat it as content and synthesize a simple title.
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (!trimmed) return undefined
+    return { title: 'Travel tips', content: trimmed }
+  }
+
+  // If we have an array of tips, pick the first valid one and normalize it.
   if (Array.isArray(value)) {
-    const arr = value.filter((item): item is BlogTip => {
+    const first = value.find((item): item is BlogTip => {
       return (
         typeof item === 'object' &&
         item !== null &&
         'title' in item &&
         'content' in item
       )
-    }).map((item) => ({ title: String(item.title), content: String(item.content) }))
-    return arr.length > 0 ? arr : undefined
+    })
+    if (!first) return undefined
+    return { title: String(first.title), content: String(first.content) }
   }
+
+  // If we have an object with title + content, normalize it.
+  if (typeof value === 'object' && value !== null && 'title' in value && 'content' in value) {
+    return {
+      title: String((value as { title: unknown }).title),
+      content: String((value as { content: unknown }).content),
+    }
+  }
+
   return undefined
 }
 

@@ -25,10 +25,7 @@ function deriveSearchIntent(
   return sorted[0]?.[0] ?? 'informational'
 }
 
-function deriveContentAngle(
-  primaryKeyword: string,
-  secondaryKeywords: string[]
-): string {
+function deriveContentAngle(primaryKeyword: string, secondaryKeywords: string[]): string {
   if (!primaryKeyword) return 'Travel and tour experience.'
   const theme = primaryKeyword
   const support = secondaryKeywords.slice(0, 3).join(', ')
@@ -105,4 +102,38 @@ export function buildKeywordIntelligenceFromNormalized(
 export function buildKeywordIntelligence(csvText: string): KeywordIntelligence {
   const normalized = normalizeKeywordsFromCsv(csvText)
   return buildKeywordIntelligenceFromNormalized(normalized)
+}
+
+/**
+ * Apply a manual primary keyword override on top of existing intelligence.
+ * Keeps secondary/semantic lists, but removes duplicates and refreshes angle + summary.
+ */
+export function overrideKeywordIntelligencePrimary(
+  intel: KeywordIntelligence,
+  primaryOverride: string
+): KeywordIntelligence {
+  const trimmed = primaryOverride.trim()
+  if (!trimmed) return intel
+
+  const normalizedOverride = trimmed.toLowerCase()
+  const secondaryKeywords = intel.secondaryKeywords.filter(
+    (k) => k.toLowerCase() !== normalizedOverride
+  )
+
+  const contentAngle = deriveContentAngle(trimmed, secondaryKeywords)
+  const keywordSummaryText = buildKeywordSummaryText({
+    primaryKeyword: trimmed,
+    secondaryKeywords,
+    semanticKeywords: intel.semanticKeywords,
+    searchIntent: intel.searchIntent,
+    contentAngle,
+  })
+
+  return {
+    ...intel,
+    primaryKeyword: trimmed,
+    secondaryKeywords,
+    contentAngle,
+    keywordSummaryText,
+  }
 }

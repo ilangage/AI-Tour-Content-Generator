@@ -24,6 +24,7 @@ interface JsonPreviewWorkspaceProps {
   onRegenerateSection?: (section: RegeneratableTourSection) => void
   onSaveSection?: (section: RegeneratableTourSection, value: SectionValue) => void
   onCancelEdit?: () => void
+  primaryKeyword?: string | null
 }
 
 export function JsonPreviewWorkspace({
@@ -39,6 +40,7 @@ export function JsonPreviewWorkspace({
   onRegenerateSection,
   onSaveSection,
   onCancelEdit,
+  primaryKeyword = null,
 }: JsonPreviewWorkspaceProps) {
   const jsonString = result ? JSON.stringify(result, null, 2) : ''
 
@@ -80,6 +82,7 @@ export function JsonPreviewWorkspace({
             <TabsContent value="preview" className="flex-1 min-h-0 mt-0 data-[state=inactive]:hidden">
               <PreviewTab
                 tour={result}
+                primaryKeyword={primaryKeyword ?? undefined}
                 editingSection={editingSection ?? null}
                 regeneratingSection={regeneratingSection ?? null}
                 onEditSection={onEditSection ?? (() => {})}

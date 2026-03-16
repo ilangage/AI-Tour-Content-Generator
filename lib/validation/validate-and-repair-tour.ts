@@ -8,6 +8,7 @@ import { validateTourResponse } from '@/lib/schema/validate-tour'
 import { sanitizeAiOutput } from './sanitize-ai-output'
 import { safeParseJson } from './safe-parse-json'
 import { repairJsonText } from './repair-json-text'
+import { ensureBlogTips } from './ensure-blog-tips'
 
 export type TourGenerationResult =
   | {
@@ -103,9 +104,12 @@ export function validateAndRepairTourOutput(rawModelOutput: string): TourGenerat
     }
   }
 
+  // At this point validation.data is schema-valid. Ensure blogTips is always a usable object.
+  const withBlogTips = ensureBlogTips(validation.data as Tour)
+
   return {
     ok: true,
-    data: validation.data,
+    data: withBlogTips,
     ...(repaired && { repaired: true }),
     ...(warnings.length > 0 && { warnings }),
   }
